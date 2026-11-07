@@ -40,7 +40,7 @@
   --shadow-lg: 0 8px 16px rgba(16, 24, 40, 0.06), 0 32px 64px -24px rgba(16, 24, 40, 0.28);
 
   --rail: 236px;
-  --font-sans: var(--font-inter), ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI',
+  --font-sans: 'Inter', var(--font-inter), ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI',
     Roboto, Helvetica, Arial, sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, monospace;
 }

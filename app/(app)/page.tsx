@@ -155,6 +155,53 @@ export default function DashboardPage() {
           </Button>
         </div>
       </div>
+ {/* balance + chart */}
+      <div >
+        <BalanceCard />
+
+        {/* <div className="card">
+          <div className="card-head">
+            <div>
+              <div className="card-title">Money collected</div>
+              <div className="card-sub">Settled value, after Busha&apos;s fee</div>
+            </div>
+            <div className="card-actions">
+              <Segmented
+                value={range}
+                onChange={setRange}
+                options={[
+                  { value: 'weekly', label: 'Weekly' },
+                  { value: 'monthly', label: 'Monthly' },
+                ]}
+              />
+            </div>
+          </div>
+          <div className="card-body" style={{ paddingBottom: 10 }}>
+            <div className="row gap-16" style={{ marginBottom: 6 }}>
+              <div className="col gap-4">
+                <span className="faint xs">Total in view</span>
+                <span style={{ fontSize: 20, fontWeight: 650, letterSpacing: '-0.025em' }} className="tnum">
+                  {naira(chart.reduce((s, c) => s + c.value, 0), { compact: true })}
+                </span>
+              </div>
+              <div className="col gap-4">
+                <span className="faint xs">Naira in</span>
+                <span style={{ fontSize: 13.5, fontWeight: 600 }} className="tnum">
+                  {naira(channelSplit.ngn, { compact: true })}
+                </span>
+              </div>
+              <div className="col gap-4">
+                <span className="faint xs">USDC in</span>
+                <span style={{ fontSize: 13.5, fontWeight: 600 }} className="tnum">
+                  {naira(channelSplit.usdc, { compact: true })}
+                </span>
+              </div>
+            </div>
+            <AreaChart data={chart} height={196} formatter={(n) => nairaShort(n)} />
+          </div>
+        </div> */}
+      </div>
+
 
       {/* stats */}
       <div className="grid-stats">
@@ -214,55 +261,8 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* balance + chart */}
-      <div className="dash-row">
-        <BalanceCard />
-
-        <div className="card">
-          <div className="card-head">
-            <div>
-              <div className="card-title">Money collected</div>
-              <div className="card-sub">Settled value, after Busha&apos;s fee</div>
-            </div>
-            <div className="card-actions">
-              <Segmented
-                value={range}
-                onChange={setRange}
-                options={[
-                  { value: 'weekly', label: 'Weekly' },
-                  { value: 'monthly', label: 'Monthly' },
-                ]}
-              />
-            </div>
-          </div>
-          <div className="card-body" style={{ paddingBottom: 10 }}>
-            <div className="row gap-16" style={{ marginBottom: 6 }}>
-              <div className="col gap-4">
-                <span className="faint xs">Total in view</span>
-                <span style={{ fontSize: 20, fontWeight: 650, letterSpacing: '-0.025em' }} className="tnum">
-                  {naira(chart.reduce((s, c) => s + c.value, 0), { compact: true })}
-                </span>
-              </div>
-              <div className="col gap-4">
-                <span className="faint xs">Naira in</span>
-                <span style={{ fontSize: 13.5, fontWeight: 600 }} className="tnum">
-                  {naira(channelSplit.ngn, { compact: true })}
-                </span>
-              </div>
-              <div className="col gap-4">
-                <span className="faint xs">USDC in</span>
-                <span style={{ fontSize: 13.5, fontWeight: 600 }} className="tnum">
-                  {naira(channelSplit.usdc, { compact: true })}
-                </span>
-              </div>
-            </div>
-            <AreaChart data={chart} height={196} formatter={(n) => nairaShort(n)} />
-          </div>
-        </div>
-      </div>
-
-      {/* exceptions + payments */}
-      <div className="grid-main">
+           {/* exceptions + payments */}
+      {/* <div className="grid-main">
         <div className="card">
           <div className="card-head">
             <div>
@@ -393,7 +393,7 @@ export default function DashboardPage() {
             </div>
           </div>
         </div>
-      </div>
+      </div> */}
 
       {/* recent orders */}
       <div className="card">
@@ -444,7 +444,8 @@ export default function DashboardPage() {
                   <td>
                     <div className="cell-stack">
                       <span style={{ fontSize: 12.5 }}>
-                        {o.items[0].emoji} {o.items[0].name}
+                        {/* {o.items[0].emoji} */}
+                        {o.items[0].name}
                       </span>
                       <span className="sub">
                         {o.items.reduce((s, i) => s + i.qty, 0)} item

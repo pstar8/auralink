@@ -41,7 +41,7 @@ export function BalanceCard() {
 
   return (
     <>
-      <div className="balance-card">
+      <div className="balance-card" style={{display: 'flex'}}>
         <div className="row-between" style={{ position: 'relative', zIndex: 1 }}>
           <div className="balance-label">{mode === 'NGN' ? 'Naira balance' : 'USDC treasury'}</div>
           <div className="currency-switch">
@@ -68,12 +68,12 @@ export function BalanceCard() {
             : `≈ ${naira(balances.usdc * RATES.usdcNgn)} at ₦${RATES.usdcNgn.toLocaleString()}`}
         </div>
 
-        <div style={{ marginTop: 16, position: 'relative', zIndex: 1 }}>
+        {/* <div style={{ marginTop: 16, position: 'relative', zIndex: 1 }}>
           <span className="balance-label">Last 14 days</span>
           <div style={{ opacity: 0.8, marginTop: 2 }}>
             <Sparkline values={last14} color="rgba(255,255,255,.9)" width={252} height={36} />
           </div>
-        </div>
+        </div> */}
 
         <div className="balance-actions">
           <button className="balance-btn solid" onClick={() => setDialog('withdraw')}>

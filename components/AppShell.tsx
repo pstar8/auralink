@@ -93,9 +93,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               />
               <div className="rail-card-title">{APP.sandbox ? 'Sandbox mode' : 'Live'}</div>
             </div>
-            <div className="rail-card-sub">
+            {/* <div className="rail-card-sub">
               {APP.sandbox ? 'Payments are simulated. No real money moves.' : 'Connected to Busha production.'}
-            </div>
+            </div> */}
           </div>
         </div>
       </aside>
@@ -170,9 +170,8 @@ function Topbar() {
       </form>
 
       <div className="topbar-actions" ref={wrapRef}>
-        <span className="chip warn no-dot" title="You are pointed at Busha's sandbox">
-          Sandbox
-        </span>
+        {/* <span className="chip warn no-dot" title="You are pointed at Busha's sandbox">
+        </span> */}
 
         <div style={{ position: 'relative' }}>
           <button className="icon-btn" onClick={() => { setNotifOpen((v) => !v); setUserOpen(false); }} aria-label="Notifications">
