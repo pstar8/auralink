@@ -114,7 +114,7 @@ The state machine in `lib/store.tsx` (`payOrder`) is the one that decides paid v
 
 ## File map
 
-```
+```text
 app/
   layout.tsx                 store provider, toasts, global CSS
   (app)/layout.tsx           sidebar + top bar shell
