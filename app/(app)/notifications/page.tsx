@@ -49,13 +49,13 @@ export default function NotificationsPage() {
               <div
                 style={{
                   padding: '10px 18px',
-                  background: '#fbfbfc',
+                  background: '#f8fafc',
                   borderBottom: '1px solid var(--line-soft)',
-                  fontSize: 11,
-                  fontWeight: 600,
+                  fontSize: 11.5,
+                  fontWeight: 650,
                   letterSpacing: '0.06em',
                   textTransform: 'uppercase',
-                  color: 'var(--faint)',
+                  color: 'var(--ink-700)',
                 }}
               >
                 {day}

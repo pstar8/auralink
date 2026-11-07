@@ -295,7 +295,9 @@ export default function OrdersPage() {
                     </td>
                     <td>
                       <div className="product-cell">
-                        <span className="product-thumb">{o.items[0].emoji}</span>
+                        <span className="product-thumb">
+                          {/* { o.items[0].emoji} */}
+                        </span>
                         <div className="cell-stack">
                           <span style={{ fontSize: 12.5 }}>{o.items[0].name}</span>
                           {o.items.length > 1 && <span className="sub">+{o.items.length - 1} more</span>}

@@ -79,7 +79,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const stateRef = useRef(state);
   stateRef.current = state;
 
-  /* ---------------------------- hydration ---------------------------- */
+  /* ---------------------------- hydration & sync ---------------------------- */
   useEffect(() => {
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
@@ -91,6 +91,22 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       /* corrupt state is not worth crashing over */
     }
     setHydrated(true);
+
+    // Sync from backend
+    Promise.allSettled([
+      api.fetchOrders(),
+      api.fetchBalances(),
+      api.fetchLedger(),
+      api.fetchProducts(),
+    ]).then(([ordersRes, balancesRes, ledgerRes, productsRes]) => {
+      setState((prev) => ({
+        ...prev,
+        orders: ordersRes.status === 'fulfilled' && ordersRes.value?.length ? ordersRes.value : prev.orders,
+        balances: balancesRes.status === 'fulfilled' && balancesRes.value ? balancesRes.value : prev.balances,
+        ledger: ledgerRes.status === 'fulfilled' && ledgerRes.value?.length ? ledgerRes.value : prev.ledger,
+        products: productsRes.status === 'fulfilled' && productsRes.value?.length ? productsRes.value : prev.products,
+      }));
+    });
   }, []);
 
   useEffect(() => {
@@ -167,7 +183,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       const order = await api.createOrderLink({ ...input, products: stateRef.current.products });
       setState((prev) => ({
         ...prev,
-        orders: [order, ...prev.orders],
+        orders: [order, ...prev.orders.filter((o) => o.id !== order.id)],
         products: prev.products.map((p) => {
           const line = order.items.find((i) => i.productId === p.id);
           return line ? { ...p, stock: Math.max(0, p.stock - line.qty) } : p;
@@ -193,7 +209,15 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
 
   const payOrder = useCallback(
     async (orderId: string, amountNgn?: number) => {
-      await sleep(700);
+      let updatedOrder: Order | null = null;
+      try {
+        updatedOrder = await api.simulatePayment(orderId, amountNgn);
+      } catch (err) {
+        console.warn('Backend simulatePayment fallback:', err);
+      }
+
+      await sleep(400);
+
       setState((prev) => {
         const order = prev.orders.find((o) => o.id === orderId);
         if (!order) return prev;
@@ -224,34 +248,31 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
             ? 'Money arrived after the quote expired. Confirm the price with the buyer.'
             : undefined;
 
+        const resolvedOrder: Order = updatedOrder || {
+          ...order,
+          status,
+          paidAt: stamp,
+          receivedNgn: received,
+          note,
+          timeline: [
+            ...order.timeline,
+            {
+              id: uid(),
+              label: short ? 'Short payment received' : 'Payment received',
+              note: `${order.channel === 'USDC' ? `${api.toUsdc(received)} USDC on Polygon` : 'Naira transfer'} · settled to ₦${net.toLocaleString('en-NG')} after fee`,
+              at: stamp,
+              tone: short ? ('warn' as const) : ('good' as const),
+            },
+          ],
+        };
+
         return {
           ...prev,
-          orders: prev.orders.map((o) =>
-            o.id === orderId
-              ? {
-                  ...o,
-                  status,
-                  paidAt: stamp,
-                  receivedNgn: received,
-                  note,
-                  timeline: [
-                    ...o.timeline,
-                    {
-                      id: uid(),
-                      label: short ? 'Short payment received' : 'Payment received',
-                      note: `${order.channel === 'USDC' ? `${api.toUsdc(received)} USDC on Polygon` : 'Naira transfer'} · settled to ${'₦'}${net.toLocaleString('en-NG')} after fee`,
-                      at: stamp,
-                      tone: short ? ('warn' as const) : ('good' as const),
-                    },
-                  ],
-                }
-              : o,
-          ),
+          orders: prev.orders.map((o) => (o.id === orderId ? resolvedOrder : o)),
           ledger: [ledgerEntry, ...prev.ledger],
           balances: {
             ...prev.balances,
             ngn: prev.balances.ngn + net,
-            // USDC payments settle to naira by default, so the treasury stays put
             usdc: prev.balances.usdc,
           },
           notifications: [
@@ -260,7 +281,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
               kind: short ? 'exception' : 'payment',
               title: short ? `Short payment on ${order.id}` : `Payment received for ${order.id}`,
               body: short
-                ? note!
+                ? (note || 'Underpaid')
                 : `${order.customer} paid ₦${received.toLocaleString('en-NG')} on ${order.channel}. A ledger line was written.`,
               at: stamp,
               read: false,
@@ -270,6 +291,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
           ],
         };
       });
+
       const order = stateRef.current.orders.find((o) => o.id === orderId);
       const received = amountNgn ?? order?.total ?? 0;
       if (order && received < order.total) {
@@ -300,32 +322,55 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     toast({ kind: 'info', title: 'Link closed', message: `${orderId} can no longer be paid.` });
   }, [toast]);
 
-  const cancelOrder = useCallback((orderId: string) => {
-    setState((prev) => ({
-      ...prev,
-      orders: prev.orders.map((o) => (o.id === orderId ? { ...o, status: 'cancelled' } : o)),
-    }));
-    toast({ kind: 'info', title: 'Order cancelled', message: `${orderId} was cancelled.` });
-  }, [toast]);
+  const cancelOrder = useCallback(
+    async (orderId: string) => {
+      try {
+        await api.cancelOrder(orderId);
+      } catch (err) {
+        console.warn('Backend cancelOrder fallback:', err);
+      }
+
+      setState((prev) => ({
+        ...prev,
+        orders: prev.orders.map((o) => (o.id === orderId ? { ...o, status: 'cancelled' } : o)),
+      }));
+      toast({ kind: 'info', title: 'Order cancelled', message: `${orderId} was cancelled.` });
+    },
+    [toast],
+  );
 
   const convert = useCallback(
     async (nairaAmount: number) => {
-      await sleep(900);
+      let backendBalances: Balances | null = null;
+      let outUsdc = api.toUsdc(nairaAmount);
+
+      try {
+        const res = await api.convert(nairaAmount);
+        if (res?.balances) {
+          backendBalances = res.balances;
+          if (res.usdcGained) outUsdc = res.usdcGained;
+        }
+      } catch (err) {
+        console.warn('Backend convert fallback:', err);
+      }
+
+      await sleep(300);
+
       setState((prev) => {
         if (nairaAmount <= 0 || nairaAmount > prev.balances.ngn) return prev;
-        const out = api.toUsdc(nairaAmount);
+        const balances = backendBalances || {
+          ngn: prev.balances.ngn - nairaAmount,
+          usdc: prev.balances.usdc + outUsdc,
+        };
         return {
           ...prev,
-          balances: {
-            ngn: prev.balances.ngn - nairaAmount,
-            usdc: prev.balances.usdc + out,
-          },
+          balances,
           notifications: [
             {
               id: uid(),
               kind: 'system',
               title: 'Converted to USDC',
-              body: `₦${nairaAmount.toLocaleString('en-NG')} became ${out} USDC at ₦${RATES.usdcNgn}/USDC.`,
+              body: `₦${nairaAmount.toLocaleString('en-NG')} became ${outUsdc} USDC at ₦${RATES.usdcNgn}/USDC.`,
               at: new Date().toISOString(),
               read: false,
             },
@@ -340,16 +385,27 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
 
   const withdraw = useCallback(
     async (amount: number) => {
-      await sleep(1000);
+      let backendBalances: Balances | null = null;
+      try {
+        const res = await api.withdraw(amount);
+        if (res?.balances) {
+          backendBalances = res.balances;
+        }
+      } catch (err) {
+        console.warn('Backend withdraw fallback:', err);
+      }
+
+      await sleep(300);
+
       setState((prev) => ({
         ...prev,
-        balances: { ...prev.balances, ngn: Math.max(0, prev.balances.ngn - amount) },
+        balances: backendBalances || { ...prev.balances, ngn: Math.max(0, prev.balances.ngn - amount) },
         notifications: [
           {
             id: uid(),
             kind: 'system',
             title: 'Withdrawal on the way',
-            body: `₦${amount.toLocaleString('en-NG')} is heading to your GTBank account ending 4412.`,
+            body: `₦${amount.toLocaleString('en-NG')} is heading to your bank account.`,
             at: new Date().toISOString(),
             read: false,
           },

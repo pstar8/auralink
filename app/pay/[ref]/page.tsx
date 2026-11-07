@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import {
@@ -17,6 +17,8 @@ import {
 } from 'lucide-react';
 import { useStore } from '@/lib/store';
 import { BRAND, RATES } from '@/lib/config';
+import { api } from '@/lib/api';
+import type { Order } from '@/lib/types';
 import { countdown, dateTimeLabel, naira, remaining } from '@/lib/format';
 import { Button, CopyButton, Spinner } from '@/components/ui';
 
@@ -25,10 +27,25 @@ export default function PayPage() {
   const ref = decodeURIComponent(String(params.ref));
   const { orders, payOrder, hydrated, now, toast } = useStore();
   const [busy, setBusy] = useState(false);
+  const [fetchedOrder, setFetchedOrder] = useState<Order | null>(null);
+  const [loadingOrder, setLoadingOrder] = useState(false);
 
-  const order = orders.find((o) => o.ref === ref);
+  const storeOrder = orders.find((o) => o.ref === ref);
 
-  if (!hydrated) {
+  useEffect(() => {
+    if (!storeOrder && ref) {
+      setLoadingOrder(true);
+      api
+        .fetchOrderByRef(ref)
+        .then((o) => setFetchedOrder(o))
+        .catch(() => setFetchedOrder(null))
+        .finally(() => setLoadingOrder(false));
+    }
+  }, [storeOrder, ref]);
+
+  const order = storeOrder || fetchedOrder;
+
+  if (!hydrated || loadingOrder) {
     return (
       <div className="pay-wrap">
         <div className="pay-card" style={{ padding: 40, textAlign: 'center' }}>
