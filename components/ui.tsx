@@ -93,18 +93,25 @@ export function Modal({
   dismissable?: boolean;
 }) {
   const ref = useRef<HTMLDivElement>(null);
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
+  const dismissableRef = useRef(dismissable);
+  dismissableRef.current = dismissable;
 
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && dismissable) onClose();
+      if (e.key === 'Escape' && dismissableRef.current) onCloseRef.current();
     };
     document.addEventListener('keydown', onKey);
     const prev = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
     const t = setTimeout(() => {
+      if (ref.current && ref.current.contains(document.activeElement)) {
+        return;
+      }
       const first = ref.current?.querySelector<HTMLElement>(
-        'input:not([type=hidden]), select, textarea, [data-autofocus]',
+        '[data-autofocus], input:not([type=hidden]):not([disabled]), select:not([disabled]), textarea:not([disabled])',
       );
       first?.focus();
     }, 60);
@@ -113,7 +120,7 @@ export function Modal({
       document.body.style.overflow = prev;
       clearTimeout(t);
     };
-  }, [open, onClose, dismissable]);
+  }, [open]);
 
   if (!open) return null;
 
@@ -121,7 +128,7 @@ export function Modal({
     <div
       className="backdrop"
       onMouseDown={(e) => {
-        if (e.target === e.currentTarget && dismissable) onClose();
+        if (e.target === e.currentTarget && dismissableRef.current) onCloseRef.current();
       }}
       role="presentation"
     >
@@ -139,7 +146,7 @@ export function Modal({
             {sub && <div className="modal-sub">{sub}</div>}
           </div>
           {dismissable && (
-            <button className="modal-x" onClick={onClose} aria-label="Close">
+            <button className="modal-x" onClick={() => onCloseRef.current()} aria-label="Close">
               <X size={16} />
             </button>
           )}

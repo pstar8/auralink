@@ -107,7 +107,7 @@ export default function SummaryPage() {
   }, [ledger, orders, period]);
 
   const share = async () => {
-    const url = `AuraLink.app/statement/${period.label.toLowerCase().replace(' ', '-')}`;
+    const url = `localhost:3000/statement/${period.label.toLowerCase().replace(' ', '-')}`;
     try {
       await navigator.clipboard.writeText(url);
       toast({ kind: 'success', title: 'Statement link copied', message: 'Read-only. Safe to send to a lender.' });

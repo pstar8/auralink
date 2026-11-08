@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import Link from 'next/link';
 import {
   ArrowRight,
@@ -20,9 +20,16 @@ import { Button, CopyButton, Field, Modal, Spinner, Stepper } from '@/components
 import { RATES } from '@/lib/config';
 
 interface Line {
+  id: string;
   productId: string;
   qty: number;
 }
+
+const newLine = (): Line => ({
+  id: Math.random().toString(36).slice(2, 9),
+  productId: '',
+  qty: 1,
+});
 
 export function CreateOrderModal({
   open,
@@ -38,30 +45,30 @@ export function CreateOrderModal({
   const [handle, setHandle] = useState('');
   const [city, setCity] = useState('');
   const [channel, setChannel] = useState<Channel>('NGN');
-  const [lines, setLines] = useState<Line[]>([{ productId: '', qty: 1 }]);
+  const [lines, setLines] = useState<Line[]>([newLine()]);
   const [discount, setDiscount] = useState('');
   const [note, setNote] = useState('');
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
   const [created, setCreated] = useState<Order | null>(null);
 
-  const reset = () => {
+  const reset = useCallback(() => {
     setCustomer('');
     setHandle('');
     setCity('');
     setChannel('NGN');
-    setLines([{ productId: '', qty: 1 }]);
+    setLines([newLine()]);
     setDiscount('');
     setNote('');
     setErrors({});
     setCreated(null);
     setSubmitting(false);
-  };
+  }, []);
 
-  const close = () => {
+  const close = useCallback(() => {
     onClose();
     setTimeout(reset, 220);
-  };
+  }, [onClose, reset]);
 
   const subtotal = useMemo(
     () =>
@@ -75,8 +82,8 @@ export function CreateOrderModal({
   const discountNum = Math.min(Number(discount.replace(/[^0-9]/g, '')) || 0, subtotal);
   const total = Math.max(0, subtotal - discountNum);
 
-  const setLine = (i: number, patch: Partial<Line>) =>
-    setLines((prev) => prev.map((l, idx) => (idx === i ? { ...l, ...patch } : l)));
+  const setLine = (id: string, patch: Partial<Line>) =>
+    setLines((prev) => prev.map((l) => (l.id === id ? { ...l, ...patch } : l)));
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -99,7 +106,7 @@ export function CreateOrderModal({
         handle,
         city,
         channel,
-        items: picked,
+        items: picked.map(({ productId, qty }) => ({ productId, qty })),
         discount: discountNum,
         note,
       });
@@ -116,7 +123,7 @@ export function CreateOrderModal({
 
   /* ------------------------------ success ------------------------------ */
   if (created) {
-    const link = `AuraLink.app/pay/${created.ref}`;
+    const link = `localhost:3000/pay/${created.ref}`;
     return (
       <Modal
         open={open}
@@ -305,15 +312,15 @@ export function CreateOrderModal({
           <span className="label">
             Items <span className="req">*</span>
           </span>
-          {lines.map((line, i) => {
+          {lines.map((line) => {
             const p = products.find((x) => x.id === line.productId);
             return (
-              <div key={i} className="row gap-8">
+              <div key={line.id} className="row gap-8">
                 <select
                   className={`select ${errors.lines ? 'invalid' : ''}`}
                   value={line.productId}
                   onChange={(e) => {
-                    setLine(i, { productId: e.target.value, qty: 1 });
+                    setLine(line.id, { productId: e.target.value, qty: 1 });
                     setErrors((prev) => ({ ...prev, lines: '' }));
                   }}
                   aria-label="Product"
@@ -327,7 +334,7 @@ export function CreateOrderModal({
                     </option>
                   ))}
                 </select>
-                <Stepper value={line.qty} onChange={(q) => setLine(i, { qty: q })} max={p?.stock || 99} />
+                <Stepper value={line.qty} onChange={(q) => setLine(line.id, { qty: q })} max={p?.stock || 99} />
                 <span
                   className="tnum"
                   style={{ width: 86, textAlign: 'right', fontSize: 12.5, fontWeight: 600, color: 'var(--ink-800)' }}
@@ -338,7 +345,7 @@ export function CreateOrderModal({
                   type="button"
                   className="icon-btn"
                   style={{ width: 30, height: 30, borderRadius: 9, border: 'none' }}
-                  onClick={() => setLines((prev) => (prev.length > 1 ? prev.filter((_, idx) => idx !== i) : prev))}
+                  onClick={() => setLines((prev) => (prev.length > 1 ? prev.filter((l) => l.id !== line.id) : prev))}
                   aria-label="Remove item"
                 >
                   <Trash2 size={14} color="#98a0ad" />
@@ -352,7 +359,7 @@ export function CreateOrderModal({
             <Button
               type="button"
               variant="link"
-              onClick={() => setLines((prev) => [...prev, { productId: '', qty: 1 }])}
+              onClick={() => setLines((prev) => [...prev, newLine()])}
               style={{ alignSelf: 'flex-start' }}
             >
               <Plus size={13} /> Add another item

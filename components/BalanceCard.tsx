@@ -254,7 +254,7 @@ function ReceiveModal({ open, onClose }: { open: boolean; onClose: () => void })
         {tab === 'ngn' ? (
           <div className="col gap-10">
             {[
-              { k: 'Bank', v: 'Wema Bank' },
+              { k: 'Bank', v: 'Busha' },
               { k: 'Account number', v: '8123 4567 89', copy: '8123456789' },
               { k: 'Account name', v: 'AuraLink / AMAKA THREADS' },
             ].map((row) => (

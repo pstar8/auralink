@@ -310,7 +310,7 @@ export default function PayPage() {
               >
                 <div className="row-between">
                   <span className="muted xs">Bank</span>
-                  <span style={{ fontWeight: 600, fontSize: 12.5 }}>Wema Bank</span>
+                  <span style={{ fontWeight: 600, fontSize: 12.5 }}>Busha</span>
                 </div>
                 <div className="row-between">
                   <span className="muted xs">Account number</span>

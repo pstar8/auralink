@@ -43,7 +43,7 @@ export function OrderDetails({
 
   if (!order) return null;
 
-  const link = `AuraLink.app/pay/${order.ref}`;
+  const link = `localhost:3000/pay/${order.ref}`;
   const meta = STATUS_META[order.status];
   const isOpen = order.status === 'awaiting';
   const shortfall = order.receivedNgn != null ? Math.max(0, order.total - order.receivedNgn) : 0;
